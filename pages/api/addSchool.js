@@ -1,4 +1,5 @@
 import { executeQuery } from "../../lib/db";
+import { uploadImageToCloudinary, shouldUseCloudinary } from "../../lib/cloudinary";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -127,8 +128,30 @@ export default async function handler(req, res) {
         .json({ success: false, message: "School image is required" });
     }
 
-    // Get relative path for the database
-    const imageRelativePath = `/schoolImages/${req.file.filename}`;
+    let imageUrl;
+    
+    // Use Cloudinary in production, local storage in development
+    if (shouldUseCloudinary()) {
+      try {
+        // Upload to Cloudinary
+        imageUrl = await uploadImageToCloudinary(
+          fs.readFileSync(req.file.path),
+          req.file.filename
+        );
+        
+        // Delete local file after successful upload
+        fs.unlinkSync(req.file.path);
+      } catch (cloudinaryError) {
+        console.error("Cloudinary upload error:", cloudinaryError);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Failed to upload image to cloud storage" 
+        });
+      }
+    } else {
+      // Use local path in development
+      imageUrl = `/schoolImages/${req.file.filename}`;
+    }
 
     // Insert data into the database
     const result = await executeQuery(
@@ -141,7 +164,7 @@ export default async function handler(req, res) {
         req.body.state,
         req.body.contact,
         req.body.email_id,
-        imageRelativePath,
+        imageUrl,
       ]
     );
 
