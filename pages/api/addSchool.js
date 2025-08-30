@@ -14,26 +14,29 @@ export const config = {
 };
 
 // In production, use memory storage to avoid file system operations
-const storage = process.env.NODE_ENV === 'production'
-  ? multer.memoryStorage() // Memory storage for production (serverless)
-  : multer.diskStorage({   // Disk storage for development
-      destination: function (req, file, cb) {
-        const uploadDir = path.join(process.cwd(), "public/schoolImages");
+const storage =
+  process.env.NODE_ENV === "production"
+    ? multer.memoryStorage() // Memory storage for production (serverless)
+    : multer.diskStorage({
+        // Disk storage for development
+        destination: function (req, file, cb) {
+          const uploadDir = path.join(process.cwd(), "public/schoolImages");
 
-        // Create directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
+          // Create directory if it doesn't exist
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
 
-        cb(null, uploadDir);
-      },
-      filename: function (req, file, cb) {
-        // Create unique filename with timestamp
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const extension = path.extname(file.originalname);
-        cb(null, file.fieldname + "-" + uniqueSuffix + extension);
-      },
-    });
+          cb(null, uploadDir);
+        },
+        filename: function (req, file, cb) {
+          // Create unique filename with timestamp
+          const uniqueSuffix =
+            Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const extension = path.extname(file.originalname);
+          cb(null, file.fieldname + "-" + uniqueSuffix + extension);
+        },
+      });
 
 // Create multer upload instance
 const upload = multer({
@@ -162,23 +165,23 @@ export default async function handler(req, res) {
     if (shouldUseCloudinary()) {
       try {
         console.log("Attempting to upload to Cloudinary...");
-        
+
         // Check if we're using memory storage (production) or disk storage (development)
         if (req.file.buffer) {
           // In production - upload from buffer (memory storage)
-          console.log('Uploading from buffer (production)');
+          console.log("Uploading from buffer (production)");
           imageUrl = await uploadBufferToCloudinary(
             req.file.buffer,
             req.file.originalname
           );
         } else {
           // In development - upload from file path
-          console.log('Uploading from file path (development)');
+          console.log("Uploading from file path (development)");
           imageUrl = await uploadImageToCloudinary(
             fs.readFileSync(req.file.path),
             req.file.filename
           );
-          
+
           // Delete local file after successful upload (dev only)
           try {
             fs.unlinkSync(req.file.path);
