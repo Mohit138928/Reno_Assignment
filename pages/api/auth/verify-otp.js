@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(500).json({
-      success: false,
+      success: false,   
       message: "Server error when verifying OTP. Please try again.",
     });
   }

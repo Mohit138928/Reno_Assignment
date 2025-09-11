@@ -30,13 +30,13 @@ export default async function handler(req, res) {
     // Save OTP to database
     await saveOTP(email, otp);
 
-    // Development mode: bypass email sending
-    if (process.env.NODE_ENV === "development") {
-      console.log("\n=================================");
-      console.log(`📧 OTP for ${email}: ${otp}`);
-      console.log("=================================\n");
+    // Always attempt to send the email, but in development mode it might just log to console
+    console.log(`Sending OTP ${otp} to ${email}`);
 
-      // Return success with the OTP in the response (only in development mode)
+    const emailSent = await sendOTPEmail(email, otp);
+
+    // In development mode, always return the OTP for testing
+    if (process.env.NODE_ENV === "development") {
       return res.status(200).json({
         success: true,
         message:
@@ -47,19 +47,18 @@ export default async function handler(req, res) {
       });
     }
 
-    // Production mode: actually send the email
-    const emailSent = await sendOTPEmail(email, otp);
-
+    // In production, don't include the OTP in the response
     if (emailSent) {
       return res.status(200).json({
         success: true,
-        message: `OTP sent to ${email}. Please check your inbox.`,
+        message: `OTP sent to ${email}. Please check your inbox and spam folder.`,
         email,
       });
     } else {
       return res.status(500).json({
         success: false,
-        message: "Failed to send OTP email. Please try again.",
+        message:
+          "Failed to send OTP email. Please try again or contact support.",
       });
     }
   } catch (error) {
