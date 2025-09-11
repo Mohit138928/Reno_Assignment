@@ -4,6 +4,7 @@ import {
   uploadBufferToCloudinary,
   shouldUseCloudinary,
 } from "../../lib/cloudinary";
+import { withAuth } from "../../lib/middleware";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -106,12 +107,14 @@ const validateFields = (body) => {
   return Object.keys(errors).length > 0 ? errors : null;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res
       .status(405)
       .json({ success: false, message: "Method not allowed" });
   }
+
+  // Authentication is checked by withAuth middleware
 
   try {
     // Log environment for debugging
@@ -244,6 +247,7 @@ export default async function handler(req, res) {
         success: true,
         message: "School added successfully",
         schoolId: result.insertId,
+        user: req.user.email, // Include user who added the school
       });
     } catch (dbInsertError) {
       console.error("Database insert error:", dbInsertError);
@@ -262,3 +266,6 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Export with auth middleware
+export default withAuth(handler);

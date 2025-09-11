@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import Navigation from "../components/Navigation";
+import { useAuth } from "../context/AuthContext";
 
 export default function ShowSchools() {
+  // Get authentication context
+  const { isAuthenticated } = useAuth();
+
   // State for schools data and loading status
   const [schools, setSchools] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,28 +88,33 @@ export default function ShowSchools() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50">
       <Head>
         <title>All Schools</title>
         <meta name="description" content="View all registered schools" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Navigation */}
+      <Navigation />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">All Schools</h1>
           <p className="text-gray-600">
             Browse through all registered schools in our database.
           </p>
-          <div className="mt-4">
-            <Link
-              href="/addSchool"
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Add New School →
-            </Link>
-          </div>
+          {isAuthenticated && (
+            <div className="mt-4">
+              <Link
+                href="/addSchool"
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Add New School →
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Search and Filter Section */}

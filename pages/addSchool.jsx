@@ -1,9 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { useAuth } from "../context/AuthContext";
+import Navigation from "../components/Navigation";
 
 export default function AddSchool() {
+  const router = useRouter();
+  const { user, loading, isAuthenticated } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push("/login?redirect=/addSchool");
+    }
+  }, [loading, isAuthenticated, router]);
+
   // Form validation with react-hook-form
   const {
     register,
@@ -94,15 +107,31 @@ export default function AddSchool() {
     }
   };
 
+  // If still loading auth state or not authenticated, show loading
+  if (loading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        {loading ? (
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        ) : (
+          <div>Redirecting to login...</div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50">
       <Head>
         <title>Add School</title>
         <meta name="description" content="Add a new school to the database" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Navigation */}
+      <Navigation />
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

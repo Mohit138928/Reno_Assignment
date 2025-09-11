@@ -5,6 +5,9 @@ A comprehensive full-stack Next.js application for managing school information, 
 ## Features
 
 ### Core Features
+- Email OTP authentication system (6-digit code with 10 min expiry)
+- Protected routes for adding/managing schools
+- Anonymous access to view schools, authenticated access for management
 - Add new schools with complete validation for all input fields
 - Upload and store school images locally (development) or in Cloudinary (production)
 - View all schools in a responsive, e-commerce style grid layout
@@ -37,12 +40,15 @@ A comprehensive full-stack Next.js application for managing school information, 
   - Next.js (React)
   - Tailwind CSS for styling
   - react-hook-form for form validation and handling
+  - Authentication context for managing user state
 
 - **Backend:** 
   - Next.js API Routes
   - MySQL for database (local and Railway)
   - multer for image upload handling
   - Environment-specific configurations for development and production
+  - Nodemailer for sending OTP emails
+  - JWT-based authentication with HTTP-only cookies
 
 - **Database:**
   - Local MySQL for development
@@ -109,6 +115,17 @@ npm install
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
    
+   # Email OTP Authentication
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=587
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-app-password
+   EMAIL_FROM=School Management System <your-email@gmail.com>
+   
+   # JWT Secret for authentication tokens
+   JWT_SECRET=your-secure-jwt-secret-key-change-this-in-production
+   OTP_EXPIRY_MINUTES=10
+   
    # For Railway deployment testing, uncomment and fill these:
    # DB_HOST=containers-us-west-xxx.railway.app
    # DB_PORT=your_railway_port
@@ -128,18 +145,32 @@ npm run dev
 
 ```
 /pages
-  _app.jsx              # Main application component
+  _app.jsx              # Main application component with Auth Provider
   index.jsx             # Redirects to showSchools page
-  addSchool.jsx         # Form to add a new school
+  login.jsx             # Email OTP authentication page
+  addSchool.jsx         # Form to add a new school (protected)
   showSchools.jsx       # Display all schools with search & filters
   /api
-    addSchool.js        # API endpoint to add a school with image upload
+    /auth
+      request-otp.js    # API endpoint to request OTP email
+      verify-otp.js     # API endpoint to verify OTP and login
+      me.js             # API endpoint to check current user
+      logout.js         # API endpoint to logout
+    addSchool.js        # API endpoint to add a school with image upload (protected)
     getSchools.js       # API endpoint to get all schools
     db-test.js          # API endpoint to test database connection
 /lib
   db.js                 # Local MySQL connection & utility functions
   railway-db.js         # Railway MySQL connection with enhanced error handling
   cloudinary.js         # Cloudinary integration for image storage
+  auth.js               # Authentication utilities and OTP management
+  email.js              # Email sending functions for OTP
+  jwt.js                # JWT token generation and verification
+  middleware.js         # Authentication middleware for API routes
+/components
+  Navigation.jsx        # Navigation bar with auth state display
+/context
+  AuthContext.js        # React context for authentication state
 /public
   /schoolImages         # Local storage for uploaded school images (development only)
 /styles
@@ -154,13 +185,25 @@ TESTING_RAILWAY_CONNECTION.md    # Step-by-step testing procedure for database c
 
 ## Workflow
 
+### Authentication Flow
 1. User is initially directed to the showSchools page
-2. They can view all schools in a grid layout
-3. Search or filter schools by name, city, or state
-4. Click "Add New School" to navigate to the form page
+2. They can view all schools without authentication
+3. If they attempt to add a new school, they're redirected to the login page
+4. On the login page:
+   - User enters their email and requests an OTP
+   - A 6-digit OTP is sent to their email (valid for 10 minutes)
+   - User enters the OTP to authenticate
+   - Upon successful verification, user is logged in and redirected
+5. Authentication is maintained via JWT in an HTTP-only cookie
+
+### School Management Flow
+1. Unauthenticated users can view schools in a grid layout
+2. They can search or filter schools by name, city, or state
+3. Only authenticated users can see and use the "Add New School" link
+4. After logging in, users can access the add school form
 5. Fill in school details and upload an image
 6. Form validates all entries client-side
-7. On submission, data is validated server-side
+7. On submission, data is validated server-side and user authentication is verified
 8. In development:
    - Image is stored locally in /public/schoolImages
    - Data is saved to local MySQL database
@@ -198,6 +241,17 @@ This project is configured for deployment to Vercel with Railway MySQL:
    CLOUDINARY_CLOUD_NAME=your_cloud_name
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
+   
+   # Email OTP Authentication
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=587
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-app-password
+   EMAIL_FROM=School Management System <your-email@gmail.com>
+   
+   # JWT Authentication
+   JWT_SECRET=your-secure-jwt-secret-key-change-this-in-production
+   OTP_EXPIRY_MINUTES=10
    ```
    
 6. Deploy!
@@ -241,9 +295,28 @@ You can test your database connections using:
 2. **API Test Endpoint**:
    Visit `/api/db-test` in your browser or send a GET request to test database connectivity
 
+## Authentication System
+
+The application implements a secure, passwordless authentication system:
+
+### Features
+- **Email OTP Authentication**: Secure login using one-time passwords sent via email
+- **6-digit OTP**: Random 6-digit codes for verification
+- **10-minute Expiry**: OTP codes expire after 10 minutes for security
+- **JWT-based Session**: Authentication persisted via HTTP-only cookies
+- **Protected Routes**: Client-side and server-side route protection
+- **User Management**: Automatic user creation on first login
+
+### Security Measures
+- OTP codes stored securely in database with expiry times
+- JWT tokens stored in HTTP-only cookies to prevent XSS attacks
+- Protected API routes verify authentication before processing requests
+- No passwords stored, reducing security risks
+- Automatic cleanup of expired OTP codes
+
 ## Future Enhancements
 
-- User authentication and authorization
+- Role-based authorization (admin vs regular users)
 - School editing and deletion functionality
 - Pagination for large datasets
 - Advanced filtering options
