@@ -4,7 +4,8 @@ import {
   verifyOTP,
   createOrUpdateUser,
 } from "../../../lib/auth";
-import { sendOTPEmail } from "../../../lib/email";
+// Use the serverless-compatible email service
+import { sendOTPEmail } from "../../../lib/email-serverless";
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -63,9 +64,16 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error("Error requesting OTP:", error);
+
+    // More detailed error message for troubleshooting
+    const errorMessage =
+      process.env.NODE_ENV === "development"
+        ? `Error: ${error.message}`
+        : "Server error when sending OTP. Please try again.";
+
     return res.status(500).json({
       success: false,
-      message: "Server error when sending OTP. Please try again.",
+      message: errorMessage,
     });
   }
 }
